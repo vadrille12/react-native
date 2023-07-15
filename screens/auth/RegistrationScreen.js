@@ -14,16 +14,11 @@ import {
   Image,
 } from "react-native";
 
+import { AppLoading } from "expo";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 
 SplashScreen.preventAutoHideAsync();
-
-// const loadApplication = async () => {
-//   await Font.loadAsync({
-//     "Roboto-Regular": require("../assets/fonts/Roboto-Regular.ttf"),
-//   });
-// };
 
 const INITIAL_STATE = {
   login: "",
@@ -31,7 +26,7 @@ const INITIAL_STATE = {
   password: "",
 };
 
-export default function LoginScreen() {
+export default function LoginScreen({ navigation }) {
   useEffect(() => {
     const onChange = () => {
       const width = Dimensions.get("window").width;
@@ -40,8 +35,8 @@ export default function LoginScreen() {
   }, []);
 
   const [fontsLoaded] = useFonts({
-    "Roboto-Medium": require("../assets/fonts/Roboto-Medium.ttf"),
-    "Roboto-Regular": require("../assets/fonts/Roboto-Regular.ttf"),
+    "Roboto-Medium": require("../../assets/fonts/Roboto-Medium.ttf"),
+    "Roboto-Regular": require("../../assets/fonts/Roboto-Regular.ttf"),
   });
 
   const [isKeyboardShown, setIsKeyboardShown] = useState(false);
@@ -87,98 +82,111 @@ export default function LoginScreen() {
       <View style={styles.container} onLayout={onLayoutRootView}>
         <ImageBackground
           style={styles.imageBg}
-          source={require("../assets/images/background-img.jpg")}
+          source={require("../../assets/images/background-img.jpg")}
         >
-          {/* <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-        > */}
-          <View style={styles.registrationWrapper}>
-            <View
-              style={{
-                ...styles.form,
-                marginBottom: isKeyboardShown ? 20 : 62,
-              }}
-            >
-              <View style={styles.photo}>
-                {isLoggedIn && (
-                  <Image source={require("../assets/images/user-img.png")} />
-                )}
-                <TouchableOpacity
-                  style={{
-                    ...styles.addPhotoBtn,
-                    borderColor: isLoggedIn ? "#E8E8E8" : "#FF6C00",
-                  }}
-                  activeOpacity={0.9}
-                  onPress={() => toggleProfileImg()}
-                >
-                  {isLoggedIn ? (
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={{ flex: 1, justifyContent: "flex-end" }}
+          >
+            <View style={styles.registrationWrapper}>
+              <View
+                style={{
+                  ...styles.form,
+                  marginBottom: isKeyboardShown ? 20 : 62,
+                }}
+              >
+                <View style={styles.photo}>
+                  {isLoggedIn && (
                     <Image
-                      source={require("../assets/images/icon-close.png")}
+                      source={require("../../assets/images/user-img.png")}
                     />
-                  ) : (
-                    <Image source={require("../assets/images/icon-add.png")} />
                   )}
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.title}>Регистрация</Text>
-              <TextInput
-                style={styles.input}
-                value={state.login}
-                placeholder="Логин"
-                placeholderTextColor={"#BDBDBD"}
-                selectionColor={"#FF6C00"}
-                onFocus={() => setIsKeyboardShown(true)}
-                onChangeText={(value) =>
-                  setState((prevState) => ({ ...prevState, login: value }))
-                }
-              />
-              <TextInput
-                style={styles.input}
-                value={state.email}
-                placeholder="Адрес электронной почты"
-                placeholderTextColor={"#BDBDBD"}
-                selectionColor={"#FF6C00"}
-                onFocus={() => setIsKeyboardShown(true)}
-                onChangeText={(value) =>
-                  setState((prevState) => ({ ...prevState, email: value }))
-                }
-              />
-              <View style={styles.passwordWrapper}>
+                  <TouchableOpacity
+                    style={{
+                      ...styles.addPhotoBtn,
+                      borderColor: isLoggedIn ? "#E8E8E8" : "#FF6C00",
+                    }}
+                    activeOpacity={0.9}
+                    onPress={() => toggleProfileImg()}
+                  >
+                    {isLoggedIn ? (
+                      <Image
+                        source={require("../../assets/images/icon-close.png")}
+                      />
+                    ) : (
+                      <Image
+                        source={require("../../assets/images/icon-add.png")}
+                      />
+                    )}
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.title}>Регистрация</Text>
                 <TextInput
                   style={styles.input}
-                  value={state.password}
-                  placeholder="Пароль"
+                  value={state.login}
+                  placeholder="Логин"
                   placeholderTextColor={"#BDBDBD"}
                   selectionColor={"#FF6C00"}
-                  secureTextEntry={isPasswordShown}
                   onFocus={() => setIsKeyboardShown(true)}
                   onChangeText={(value) =>
-                    setState((prevState) => ({ ...prevState, password: value }))
+                    setState((prevState) => ({ ...prevState, login: value }))
                   }
                 />
-                <Text
-                  style={styles.showPasswordTxt}
-                  onPress={() => passwordShowToggler()}
-                >
-                  {isPasswordShown ? "Показать" : "Скрыть"}
-                </Text>
-              </View>
-              {!isKeyboardShown && (
-                <TouchableOpacity
-                  style={styles.button}
-                  activeOpacity={0.77}
-                  onPress={() => handleSubmit()}
-                >
-                  <Text style={styles.buttonTxt}>Зарегистрироваться</Text>
-                </TouchableOpacity>
-              )}
+                <TextInput
+                  style={styles.input}
+                  value={state.email}
+                  placeholder="Адрес электронной почты"
+                  placeholderTextColor={"#BDBDBD"}
+                  selectionColor={"#FF6C00"}
+                  onFocus={() => setIsKeyboardShown(true)}
+                  onChangeText={(value) =>
+                    setState((prevState) => ({ ...prevState, email: value }))
+                  }
+                />
+                <View style={styles.passwordWrapper}>
+                  <TextInput
+                    style={styles.input}
+                    value={state.password}
+                    placeholder="Пароль"
+                    placeholderTextColor={"#BDBDBD"}
+                    selectionColor={"#FF6C00"}
+                    secureTextEntry={isPasswordShown}
+                    onFocus={() => setIsKeyboardShown(true)}
+                    onChangeText={(value) =>
+                      setState((prevState) => ({
+                        ...prevState,
+                        password: value,
+                      }))
+                    }
+                  />
+                  <Text
+                    style={styles.showPasswordTxt}
+                    onPress={() => passwordShowToggler()}
+                  >
+                    {isPasswordShown ? "Показать" : "Скрыть"}
+                  </Text>
+                </View>
+                {!isKeyboardShown && (
+                  <TouchableOpacity
+                    style={styles.button}
+                    activeOpacity={0.77}
+                    onPress={() => handleSubmit()}
+                  >
+                    <Text style={styles.buttonTxt}>Зарегистрироваться</Text>
+                  </TouchableOpacity>
+                )}
 
-              {!isKeyboardShown && (
-                <Text style={styles.infoTxt}>Уже есть аккаунт? Войти</Text>
-              )}
+                {!isKeyboardShown && (
+                  <Text
+                    onPress={() => navigation.navigate("Login")}
+                    style={styles.infoTxt}
+                  >
+                    Уже есть аккаунт? Войти
+                  </Text>
+                )}
+              </View>
             </View>
-          </View>
-          {/* </KeyboardAvoidingView> */}
+          </KeyboardAvoidingView>
         </ImageBackground>
       </View>
     </TouchableWithoutFeedback>

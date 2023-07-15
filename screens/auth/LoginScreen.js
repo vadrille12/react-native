@@ -29,10 +29,10 @@ const INITIAL_STATE = {
   password: "",
 };
 
-export default function LoginScreen() {
+export default function LoginScreen({ navigation }) {
   const [fontsLoaded] = useFonts({
-    "Roboto-Medium": require("../assets/fonts/Roboto-Medium.ttf"),
-    "Roboto-Regular": require("../assets/fonts/Roboto-Regular.ttf"),
+    "Roboto-Medium": require("../../assets/fonts/Roboto-Medium.ttf"),
+    "Roboto-Regular": require("../../assets/fonts/Roboto-Regular.ttf"),
   });
 
   const [isKeyboardShown, setIsKeyboardShown] = useState(false);
@@ -73,7 +73,7 @@ export default function LoginScreen() {
       <View style={styles.container} onLayout={onLayoutRootView}>
         <ImageBackground
           style={styles.imageBg}
-          source={require("../assets/images/background-img.jpg")}
+          source={require("../../assets/images/background-img.jpg")}
         >
           {/* <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -126,7 +126,10 @@ export default function LoginScreen() {
                 </TouchableOpacity>
               )}
               {!isKeyboardShown && (
-                <Text style={styles.infoTxt}>
+                <Text
+                  onPress={() => navigation.navigate("Registration")}
+                  style={styles.infoTxt}
+                >
                   Нет аккаунта? Зарегистрироваться
                 </Text>
               )}
