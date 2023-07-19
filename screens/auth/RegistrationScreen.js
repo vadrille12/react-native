@@ -60,7 +60,6 @@ export default function LoginScreen({ navigation }) {
   };
 
   const handleSubmit = () => {
-    console.log(state);
     hideKeyboard();
     setState(INITIAL_STATE);
   };
