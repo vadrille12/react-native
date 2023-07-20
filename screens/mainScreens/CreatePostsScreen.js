@@ -1,81 +1,146 @@
-import { useState } from "react";
-import { Text, View, StyleSheet, TouchableOpacity, Image } from "react-native";
+import { useState, useEffect } from "react";
+import {
+  Text,
+  View,
+  StyleSheet,
+  Pressable,
+  Image,
+  TextInput,
+  Keyboard,
+  ActivityIndicator,
+} from "react-native";
 import { Camera } from "expo-camera";
 import { FontAwesome5 } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import * as Location from "expo-location";
+
+const INITIAL_STATE = {
+  name: "",
+  location: "",
+};
 
 const CreatePostScreen = ({ navigation }) => {
   const [camera, setCamera] = useState(null);
   const [photo, setPhoto] = useState("");
+  const [state, setState] = useState(INITIAL_STATE);
+  const [isKeyboardShown, setIsKeyboardShown] = useState(false);
+  const [coords, setCoords] = useState(null);
+  const [locationStatus, setLocationStatus] = useState("idle");
+
+  const getLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        console.log("Permission to access location was denied");
+        setLocationStatus("denied");
+        return;
+      }
+
+      setLocationStatus("loading");
+      const location = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = location.coords;
+      setCoords({ latitude, longitude });
+      setLocationStatus("granted");
+    } catch (error) {
+      console.log("Error while getting location: ", error);
+      setLocationStatus("error");
+    }
+  };
 
   const takePhoto = async () => {
+    if (!camera) return;
+
     const photo = await camera.takePictureAsync();
-    // const location = await Location.getCurrentPositionAsync();
-    // console.log("location", location);
     setPhoto(photo.uri);
+    getLocation();
   };
 
   const sendPhoto = () => {
-    navigation.navigate("DefaultScreen", { photo });
+    navigation.navigate("Публікації", { photo, state, coords });
+    console.log(state);
+  };
+
+  const hideKeyboard = () => {
+    setIsKeyboardShown(false);
+    Keyboard.dismiss();
   };
 
   return (
-    <View>
-      <Camera style={styles.camera} ref={setCamera}>
-        {photo && (
-          <View style={styles.photoContainer}>
-            <Image
-              source={{ uri: photo }}
-              styles={{ width: 200, height: 200 }}
-            />
-          </View>
-        )}
+    <Pressable onPress={hideKeyboard} style={styles.container}>
+      <View
+        style={{
+          ...styles.imageContainer,
+          marginTop: isKeyboardShown ? -120 : 0,
+        }}
+      >
+        <Camera style={styles.camera} ref={setCamera}>
+          {photo && (
+            <View style={styles.photoContainer}>
+              <Image
+                source={{ uri: photo }}
+                style={{ width: 100, height: 100 }}
+              />
+            </View>
+          )}
 
-        <TouchableOpacity onPress={takePhoto} style={styles.photoButton}>
-          <Text style={{ color: "#fff" }}>Photo</Text>
-        </TouchableOpacity>
-      </Camera>
-      <TouchableOpacity onPress={sendPhoto} style={styles.sendButton}>
-        <Text style={{ fontSize: 20, textTransform: "uppercase" }}>Send</Text>
-      </TouchableOpacity>
-      {/* <View style={styles.container}>
-        <View style={styles.imageContainer}>
-          <TouchableOpacity style={styles.cameraButton}>
-            <FontAwesome5
-              name="camera"
-              size={24}
-              color="rgba(189, 189, 189, 1)"
-            />
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.text}> Завантажте фото/Редагувати фото</Text>
-        <TextInput
-          // style={{ ...textStyle, ...inputStyle, marginBottom: 16 }}
-          keyboardType="default"
-          placeholder="Name..."
-          placeholderTextColor="#BDBDBD"
-          value={value.title}
-          // onFocus={() => setIsKeyboard(true)}
-          // onEndEditing={() => setIsKeyboard(false)}
-          // onChangeText={(value) => handleChangeInput("title", value)}
+          <Pressable onPress={takePhoto} style={styles.cameraButton}>
+            {({ pressed }) => (
+              <FontAwesome5
+                name="camera"
+                size={24}
+                color={
+                  pressed
+                    ? "rgba(189, 189, 189, 0.5)"
+                    : "rgba(189, 189, 189, 1)"
+                }
+              />
+            )}
+          </Pressable>
+        </Camera>
+      </View>
+
+      <Text style={styles.text}> Завантажте фото/Редагувати фото</Text>
+      <TextInput
+        style={styles.input}
+        value={state.name}
+        placeholder="Назва..."
+        placeholderTextColor="#BDBDBD"
+        selectionColor="#FF6C00"
+        onFocus={() => setIsKeyboardShown(true)}
+        onChangeText={(value) =>
+          setState((prevState) => ({ ...prevState, name: value }))
+        }
+      />
+
+      <View style={styles.inputThumb}>
+        <Feather
+          name="map-pin"
+          size={24}
+          color="#BDBDBD"
+          style={styles.locationIcon}
         />
-        <View style={{ justifyContent: "center" }}>
-          <TextInput
-            // style={{ ...textStyle, ...inputStyle, paddingLeft: 28 }}
-            keyboardType="default"
-            placeholder="Place..."
-            placeholderTextColor="#BDBDBD"
-            value={value.descriptionLocation}
-            // onFocus={() => setIsKeyboard(true)}
-            // onEndEditing={() => setIsKeyboard(false)}
-            // onChangeText={(value) =>
-            //   handleChangeInput("descriptionLocation", value)
-            // }
-          />
-          <MapPinIcon style={{ position: "absolute" }} />
-        </View>
-      </View> */}
-    </View>
+        <TextInput
+          style={{ ...styles.input, borderBottomWidth: 0 }}
+          value={state.location}
+          placeholder="Місцевість..."
+          placeholderTextColor="#BDBDBD"
+          selectionColor="#FF6C00"
+          onFocus={() => setIsKeyboardShown(true)}
+          onChangeText={(value) =>
+            setState((prevState) => ({ ...prevState, location: value }))
+          }
+        />
+      </View>
+
+      <Pressable onPress={sendPhoto} style={styles.sendButton}>
+        {({ pressed }) => (
+          <Text style={{ fontSize: 16, color: "#fff" }}>Опублікувати</Text>
+        )}
+      </Pressable>
+      {locationStatus === "error" && (
+        <Text>Помилка отримання місцезнаходження</Text>
+      )}
+    </Pressable>
   );
 };
 
@@ -88,13 +153,12 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     height: 240,
-    justifyContent: "center",
-    alignItems: "center",
     marginBottom: 8,
     backgroundColor: "#F6F6F6",
     borderWidth: 1,
     borderRadius: 8,
     borderColor: "#E8E8E8",
+    overflow: "hidden",
   },
   cameraButton: {
     width: 60,
@@ -114,40 +178,50 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   camera: {
-    height: "70%",
-    marginHorizontal: 5,
-    marginTop: 30,
+    height: 240,
+    justifyContent: "center",
     alignItems: "center",
-    justifyContent: "flex-end",
-    marginBottom: 30,
-    borderRadius: 10,
   },
   photoContainer: {
     position: "absolute",
-    top: 50,
+    top: 10,
     left: 10,
-    width: 200,
-    height: 200,
+    width: 100,
+    height: 100,
     borderColor: "#fff",
     borderWidth: 1,
+    borderRadius: 10,
+    overflow: "hidden",
   },
-  photoButton: {
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#fff",
-    borderRadius: 20,
-    width: 70,
-    height: 70,
+  input: {
+    width: "100%",
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    fontSize: 16,
+    lineHeight: 19,
+    borderBottomColor: "#E8E8E8",
+    borderBottomWidth: 1,
+  },
+  inputThumb: {
+    position: "relative",
+    width: "100%",
+    marginTop: 16,
+    marginBottom: 32,
+    paddingLeft: 36,
+    borderBottomColor: "#E8E8E8",
+    borderBottomWidth: 1,
+  },
+  locationIcon: {
+    position: "absolute",
+    top: 16,
+    left: 8,
   },
   sendButton: {
-    marginHorizontal: 30,
     backgroundColor: "#FF6C00",
-    borderRadius: 10,
+    borderRadius: 100,
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 10,
+    paddingVertical: 16,
   },
 });
 

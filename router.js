@@ -41,6 +41,7 @@ export const useRoute = (isAuth) => {
     >
       <MainTab.Screen
         options={{
+          headerShown: false,
           tabBarIconStyle: {
             marginVertical: 15,
           },
@@ -72,7 +73,7 @@ export const useRoute = (isAuth) => {
             paddingRight: 16,
           },
         }}
-        name="Публікації"
+        name="Posts"
         component={PostsScreen}
       />
       <MainTab.Screen
