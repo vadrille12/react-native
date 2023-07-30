@@ -14,9 +14,17 @@ import {
   Image,
 } from "react-native";
 
-import { AppLoading } from "expo";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
+import * as ImagePicker from "expo-image-picker";
+
+import { useDispatch, useSelector } from "react-redux";
+import { register } from "../../redux/auth/authOperations";
+
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { storage } from "../../firebase/config";
+
+import uuid from "react-native-uuid";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -24,9 +32,10 @@ const INITIAL_STATE = {
   login: "",
   email: "",
   password: "",
+  photoUri: null,
 };
 
-export default function LoginScreen({ navigation }) {
+export default function RegistrationScreen({ navigation }) {
   useEffect(() => {
     const onChange = () => {
       const width = Dimensions.get("window").width;
@@ -41,8 +50,10 @@ export default function LoginScreen({ navigation }) {
 
   const [isKeyboardShown, setIsKeyboardShown] = useState(false);
   const [isPasswordShown, setIsPasswordShown] = useState(true);
-  const [isLoggedIn, setIsloggedIn] = useState(false);
   const [state, setState] = useState(INITIAL_STATE);
+  const [photo, setPhoto] = useState(null);
+
+  const dispatch = useDispatch();
 
   const onLayoutRootView = useCallback(async () => {
     if (fontsLoaded) {
@@ -54,22 +65,69 @@ export default function LoginScreen({ navigation }) {
     return null;
   }
 
+  const handlePickPhoto = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [3, 3],
+        quality: 1,
+      });
+
+      if (!result.canceled) {
+        const photoUri = result.assets[0].uri;
+        setPhoto(photoUri);
+        console.log(photoUri);
+      }
+    } catch (error) {
+      console.log("Ошибка выбора фото:", error);
+    }
+  };
+
+  const uploadPhotoToServer = async () => {
+    try {
+      const res = await fetch(photo);
+      const file = await res.blob();
+      const uniqueID = uuid.v4();
+      const storageRef = ref(storage, `userAvatar/${uniqueID}`);
+      await uploadBytes(storageRef, file);
+      const postImageUrl = await getDownloadURL(storageRef);
+      return postImageUrl;
+    } catch (error) {
+      console.log("Ошибка загрузки фото:", error.message);
+      return null;
+    }
+  };
+
   const hideKeyboard = () => {
     setIsKeyboardShown(false);
     Keyboard.dismiss();
   };
 
-  const handleSubmit = () => {
-    hideKeyboard();
-    setState(INITIAL_STATE);
+  const handleSubmit = async () => {
+    try {
+      const imageUrl = await uploadPhotoToServer();
+      if (!imageUrl) {
+        console.log("Ошибка при загрузке фото на сервер");
+      }
+
+      const userData = {
+        login: state.login,
+        email: state.email,
+        password: state.password,
+        photoUri: imageUrl,
+      };
+
+      dispatch(register(userData));
+      hideKeyboard();
+      setState(INITIAL_STATE);
+    } catch (error) {
+      console.log("Ошибка при регистрации:", error.message);
+    }
   };
 
   const passwordShowToggler = () => {
     setIsPasswordShown((prevState) => !prevState);
-  };
-
-  const toggleProfileImg = () => {
-    setIsloggedIn((prevState) => !prevState);
   };
 
   return (
@@ -95,20 +153,25 @@ export default function LoginScreen({ navigation }) {
                 }}
               >
                 <View style={styles.photo}>
-                  {isLoggedIn && (
+                  {photo && (
                     <Image
-                      source={require("../../assets/images/user-img.png")}
+                      source={{ uri: photo }}
+                      style={{
+                        width: 120,
+                        height: 120,
+                        borderRadius: 16,
+                      }}
                     />
                   )}
                   <TouchableOpacity
                     style={{
                       ...styles.addPhotoBtn,
-                      borderColor: isLoggedIn ? "#E8E8E8" : "#FF6C00",
+                      borderColor: photo ? "#E8E8E8" : "#FF6C00",
                     }}
                     activeOpacity={0.9}
-                    onPress={() => toggleProfileImg()}
+                    onPress={handlePickPhoto}
                   >
-                    {isLoggedIn ? (
+                    {photo ? (
                       <Image
                         source={require("../../assets/images/icon-close.png")}
                       />
@@ -209,7 +272,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 25,
     backgroundColor: "#fff",
   },
-
   form: {
     gap: 16,
   },

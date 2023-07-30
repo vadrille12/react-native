@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Text,
   View,
@@ -7,25 +7,32 @@ import {
   Image,
   TextInput,
   Keyboard,
-  ActivityIndicator,
 } from "react-native";
-import { Camera } from "expo-camera";
-import { FontAwesome5 } from "@expo/vector-icons";
-import { Feather } from "@expo/vector-icons";
-import * as Location from "expo-location";
+import { useSelector } from "react-redux";
 
-const INITIAL_STATE = {
-  name: "",
-  location: "",
-};
+import { Camera } from "expo-camera";
+import * as Location from "expo-location";
+import * as ImagePicker from "expo-image-picker";
+
+import { FontAwesome5, Feather } from "@expo/vector-icons";
+
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { collection, addDoc } from "firebase/firestore";
+
+import { db, storage } from "../../firebase/config";
+
+import uuid from "react-native-uuid";
 
 const CreatePostScreen = ({ navigation }) => {
+  const [isKeyboardShown, setIsKeyboardShown] = useState(false);
+  const [locationStatus, setLocationStatus] = useState("idle");
   const [camera, setCamera] = useState(null);
   const [photo, setPhoto] = useState("");
-  const [state, setState] = useState(INITIAL_STATE);
-  const [isKeyboardShown, setIsKeyboardShown] = useState(false);
   const [coords, setCoords] = useState(null);
-  const [locationStatus, setLocationStatus] = useState("idle");
+  const [description, setDescription] = useState("");
+  const [location, setLocation] = useState("");
+
+  const { userId, login } = useSelector((state) => state.auth);
 
   const getLocation = async () => {
     try {
@@ -48,16 +55,63 @@ const CreatePostScreen = ({ navigation }) => {
   };
 
   const takePhoto = async () => {
-    if (!camera) return;
-
-    const photo = await camera.takePictureAsync();
-    setPhoto(photo.uri);
+    const { uri } = await camera.takePictureAsync();
+    setPhoto(uri);
     getLocation();
   };
 
-  const sendPhoto = () => {
-    navigation.navigate("Публікації", { photo, state, coords });
-    console.log(state);
+  const openGallery = async () => {
+    try {
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        alert("Для доступа к галерее разрешение не предоставлено.");
+        return;
+      }
+
+      const pickerResult = await ImagePicker.launchImageLibraryAsync();
+      if (!pickerResult.canceled) {
+        setPhoto(pickerResult.assets[0].uri);
+        getLocation();
+      }
+    } catch (error) {
+      console.error("Ошибка при выборе изображения из галереи:", error);
+    }
+  };
+
+  const uploadPhotoToServer = async () => {
+    try {
+      const res = await fetch(photo);
+
+      const file = await res.blob();
+      const uniqueID = uuid.v4();
+      const storageRef = ref(storage, `/postImage/${uniqueID}`);
+      await uploadBytes(storageRef, file);
+      const postImageUrl = await getDownloadURL(storageRef);
+      return postImageUrl;
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
+
+  const uploadPostToServer = async () => {
+    try {
+      const photo = await uploadPhotoToServer();
+      await addDoc(collection(db, "posts"), {
+        photo,
+        description,
+        location,
+        coords,
+        userId,
+        login,
+      });
+      setLocation("");
+      setDescription("");
+      setPhoto("");
+      navigation.navigate("Публікації");
+    } catch (error) {
+      console.log(error.message);
+    }
   };
 
   const hideKeyboard = () => {
@@ -99,17 +153,20 @@ const CreatePostScreen = ({ navigation }) => {
         </Camera>
       </View>
 
-      <Text style={styles.text}> Завантажте фото/Редагувати фото</Text>
+      <Pressable onPress={openGallery}>
+        <Text style={styles.text}>
+          {photo ? "Редагувати фото" : "Завантажте фото"}
+        </Text>
+      </Pressable>
+
       <TextInput
         style={styles.input}
-        value={state.name}
+        value={description}
         placeholder="Назва..."
         placeholderTextColor="#BDBDBD"
         selectionColor="#FF6C00"
         onFocus={() => setIsKeyboardShown(true)}
-        onChangeText={(value) =>
-          setState((prevState) => ({ ...prevState, name: value }))
-        }
+        onChangeText={setDescription}
       />
 
       <View style={styles.inputThumb}>
@@ -121,21 +178,17 @@ const CreatePostScreen = ({ navigation }) => {
         />
         <TextInput
           style={{ ...styles.input, borderBottomWidth: 0 }}
-          value={state.location}
+          value={location}
           placeholder="Місцевість..."
           placeholderTextColor="#BDBDBD"
           selectionColor="#FF6C00"
           onFocus={() => setIsKeyboardShown(true)}
-          onChangeText={(value) =>
-            setState((prevState) => ({ ...prevState, location: value }))
-          }
+          onChangeText={setLocation}
         />
       </View>
 
-      <Pressable onPress={sendPhoto} style={styles.sendButton}>
-        {({ pressed }) => (
-          <Text style={{ fontSize: 16, color: "#fff" }}>Опублікувати</Text>
-        )}
+      <Pressable onPress={uploadPostToServer} style={styles.sendButton}>
+        <Text style={{ fontSize: 16, color: "#fff" }}>Опублікувати</Text>
       </Pressable>
       {locationStatus === "error" && (
         <Text>Помилка отримання місцезнаходження</Text>

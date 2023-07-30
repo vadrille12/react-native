@@ -1,8 +1,9 @@
 import { TouchableOpacity } from "react-native";
+
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 // icons
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { Feather, Ionicons, AntDesign } from "@expo/vector-icons";
 
 import RegistrationScreen from "./screens/auth/RegistrationScreen";
 import LoginScreen from "./screens/auth/LoginScreen";
@@ -13,7 +14,7 @@ import ProfileScreen from "./screens/mainScreens/ProfileScreen";
 const AuthStack = createStackNavigator();
 const MainTab = createBottomTabNavigator();
 
-export const useRoute = (isAuth) => {
+export const useRoute = (isAuth, navigation) => {
   if (!isAuth) {
     return (
       <AuthStack.Navigator>
@@ -60,24 +61,17 @@ export const useRoute = (isAuth) => {
             />
           ),
           tabBarActiveTintColor: "white",
-          headerRight: ({ focused, color, size }) => (
-            <TouchableOpacity>
-              <Feather name="log-out" size={24} color="#BDBDBD" />
-            </TouchableOpacity>
-          ),
           headerStyle: {
             borderBottomColor: "#E5E5E5",
             borderBottomWidth: 1,
-          },
-          headerRightContainerStyle: {
-            paddingRight: 16,
           },
         }}
         name="Posts"
         component={PostsScreen}
       />
       <MainTab.Screen
-        options={{
+        options={({ navigation }) => ({
+          tabBarStyle: { display: "none" },
           tabBarIconStyle: {
             backgroundColor: "#FF6C00",
             width: 70,
@@ -87,12 +81,26 @@ export const useRoute = (isAuth) => {
           tabBarIcon: ({ focused, size, color }) => (
             <Ionicons name="add" size={size} color={"#fff"} />
           ),
-        }}
-        name="Create"
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <AntDesign
+                name="arrowleft"
+                focused="false"
+                size={24}
+                color="#212121"
+              />
+            </TouchableOpacity>
+          ),
+          headerLeftContainerStyle: {
+            paddingLeft: 16,
+          },
+        })}
+        name="Створити публікацію"
         component={CreatePostsScreen}
       />
       <MainTab.Screen
         options={{
+          headerShown: false,
           tabBarIconStyle: {},
           tabBarIcon: ({ focused, size, color }) => (
             <Feather
