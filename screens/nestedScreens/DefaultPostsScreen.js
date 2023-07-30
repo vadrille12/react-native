@@ -1,19 +1,27 @@
 import { useEffect, useState } from "react";
 import { Text, View, StyleSheet, FlatList, Image } from "react-native";
 
-import { Feather } from "@expo/vector-icons";
-import { EvilIcons } from "@expo/vector-icons";
+import { Feather, EvilIcons } from "@expo/vector-icons";
+
+import { onSnapshot, collection } from "firebase/firestore";
+import { db } from "../../firebase/config";
 
 const DefaultScreen = ({ route, navigation }) => {
   const [posts, setPosts] = useState([]);
-  const { coords } = route.params || {};
 
+  const getAllPost = async () => {
+    onSnapshot(collection(db, "posts"), (snapshot) => {
+      const updatedPosts = snapshot.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id,
+      }));
+      setPosts(updatedPosts);
+    });
+  };
+  console.log(posts);
   useEffect(() => {
-    console.log(route.params);
-    if (route.params) {
-      setPosts((prevState) => [...prevState, route.params]);
-    }
-  }, [route.params]);
+    getAllPost();
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -26,10 +34,12 @@ const DefaultScreen = ({ route, navigation }) => {
               source={{ uri: item.photo }}
               style={{ height: 240, borderRadius: 8 }}
             />
-            <Text style={{ fontSize: 16 }}>{item.state.name}</Text>
+            <Text style={{ fontSize: 16 }}>{item.description}</Text>
             <View>
               <EvilIcons
-                onPress={() => navigation.navigate("Comments")}
+                onPress={() =>
+                  navigation.navigate("Comments", { postId: item.id })
+                }
                 name="comment"
                 size={30}
                 color="#BDBDBD"
@@ -49,10 +59,12 @@ const DefaultScreen = ({ route, navigation }) => {
                   style={{ position: "absolute", left: 0, top: 1 }}
                 />
                 <Text
-                  onPress={() => navigation.navigate("Map", { coords })}
+                  onPress={() =>
+                    navigation.navigate("Map", { coords: item.coords })
+                  }
                   style={{ paddingLeft: 26, fontSize: 16 }}
                 >
-                  {item.state.location}
+                  {item.location}
                 </Text>
               </View>
             </View>
