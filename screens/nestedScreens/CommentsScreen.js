@@ -10,19 +10,27 @@ import {
   Text,
   Image,
   Dimensions,
+  ScrollView,
 } from "react-native";
 
 import { useSelector } from "react-redux";
 import { Feather } from "@expo/vector-icons";
 
-import { doc, collection, addDoc, onSnapshot } from "firebase/firestore";
+import {
+  doc,
+  collection,
+  addDoc,
+  onSnapshot,
+  orderBy,
+  query,
+} from "firebase/firestore";
 import { db } from "../../firebase/config";
 
 const CommentsScreen = ({ route }) => {
   const [isKeyboardShown, setIsKeyboardShown] = useState(false);
   const [allComments, setAllComments] = useState([]);
   const [comment, setComment] = useState("");
-  const { postId } = route.params;
+  const { postId, uri } = route.params;
   console.log(postId);
   const { login, photoUri } = useSelector((state) => state.auth);
 
@@ -39,7 +47,7 @@ const CommentsScreen = ({ route }) => {
 
   const createComment = async () => {
     try {
-      const commentData = { comment, login, photoUri };
+      const commentData = { comment, login, photoUri, createdAt: new Date() };
       const commentsCollection = collection(
         doc(db, "posts", postId),
         "comments"
@@ -59,8 +67,12 @@ const CommentsScreen = ({ route }) => {
         doc(db, "posts", postId),
         "comments"
       );
+      const commentsQuery = query(
+        commentsCollection,
+        orderBy("createdAt", "asc")
+      );
 
-      onSnapshot(commentsCollection, (snapshot) => {
+      onSnapshot(commentsQuery, (snapshot) => {
         const updatedComments = snapshot.docs.map((doc) => ({
           ...doc.data(),
           id: doc.id,
@@ -79,6 +91,11 @@ const CommentsScreen = ({ route }) => {
 
   return (
     <Pressable onPress={hideKeyboard} style={styles.container}>
+      <Image
+        source={{ uri }}
+        style={{ height: 240, marginBottom: 32, borderRadius: 8 }}
+      />
+
       {allComments.length !== 0 ? (
         <FlatList
           data={allComments}
@@ -116,6 +133,7 @@ const CommentsScreen = ({ route }) => {
           <Text style={{ textAlign: "center" }}>Нема коментарів</Text>
         </View>
       )}
+
       <View>
         <TextInput
           type="text"
@@ -124,6 +142,7 @@ const CommentsScreen = ({ route }) => {
           style={styles.commentInput}
           placeholder="Комментировать..."
           placeholderTextColor="#BDBDBD"
+          onFocus={() => setIsKeyboardShown(true)}
         />
         <TouchableOpacity
           style={styles.iconWrapper}

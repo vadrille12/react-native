@@ -3,22 +3,30 @@ import { Text, View, StyleSheet, FlatList, Image } from "react-native";
 
 import { Feather, EvilIcons } from "@expo/vector-icons";
 
-import { onSnapshot, collection } from "firebase/firestore";
+import { onSnapshot, collection, query, orderBy } from "firebase/firestore";
 import { db } from "../../firebase/config";
 
 const DefaultScreen = ({ route, navigation }) => {
   const [posts, setPosts] = useState([]);
 
   const getAllPost = async () => {
-    onSnapshot(collection(db, "posts"), (snapshot) => {
-      const updatedPosts = snapshot.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
-      }));
-      setPosts(updatedPosts);
-    });
+    try {
+      const postsCollection = collection(db, "posts");
+      const postsQuery = query(postsCollection, orderBy("createdAt", "desc"));
+
+      onSnapshot(postsQuery, (snapshot) => {
+        const updatedPosts = snapshot.docs.map((doc) => ({
+          ...doc.data(),
+          id: doc.id,
+        }));
+        setPosts(updatedPosts);
+      });
+    } catch (error) {
+      console.error("Error getting posts: ", error);
+    }
   };
   console.log(posts);
+
   useEffect(() => {
     getAllPost();
   }, []);
@@ -29,6 +37,7 @@ const DefaultScreen = ({ route, navigation }) => {
         data={posts}
         keyExtractor={(item, indx) => indx.toString()}
         renderItem={({ item }) => (
+          // console.log(item)
           <View style={{ marginBottom: 32 }}>
             <Image
               source={{ uri: item.photo }}
@@ -38,7 +47,10 @@ const DefaultScreen = ({ route, navigation }) => {
             <View>
               <EvilIcons
                 onPress={() =>
-                  navigation.navigate("Comments", { postId: item.id })
+                  navigation.navigate("Comments", {
+                    postId: item.id,
+                    uri: item.photo,
+                  })
                 }
                 name="comment"
                 size={30}
@@ -62,7 +74,11 @@ const DefaultScreen = ({ route, navigation }) => {
                   onPress={() =>
                     navigation.navigate("Map", { coords: item.coords })
                   }
-                  style={{ paddingLeft: 26, fontSize: 16 }}
+                  style={{
+                    paddingLeft: 26,
+                    fontSize: 16,
+                    textDecorationLine: "underline",
+                  }}
                 >
                   {item.location}
                 </Text>

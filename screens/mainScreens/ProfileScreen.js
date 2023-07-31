@@ -14,7 +14,13 @@ import { useDispatch, useSelector } from "react-redux";
 
 import * as ImagePicker from "expo-image-picker";
 
-import { onSnapshot, collection, query, where } from "firebase/firestore";
+import {
+  onSnapshot,
+  collection,
+  query,
+  where,
+  orderBy,
+} from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { db, storage } from "../../firebase/config";
 
@@ -46,11 +52,15 @@ const ProfileScreen = ({ navigation }) => {
       const postsCollection = collection(db, "posts");
       const userPostsQuery = query(
         postsCollection,
-        where("userId", "==", userId)
+        where("userId", "==", userId),
+        orderBy("createdAt", "desc")
       );
 
       onSnapshot(userPostsQuery, (snapshot) => {
-        const updatedPosts = snapshot.docs.map((doc) => ({ ...doc.data() }));
+        const updatedPosts = snapshot.docs.map((doc) => ({
+          ...doc.data(),
+          id: doc.id,
+        }));
         setUserPosts(updatedPosts);
       });
     } catch (error) {
@@ -134,9 +144,11 @@ const ProfileScreen = ({ navigation }) => {
             </View>
             <Text style={styles.name}>{login}</Text>
             <View
-              style={{
-                height: userPosts.length !== 0 ? "100%" : 400,
-              }}
+              style={
+                {
+                  // height: userPosts.length !== 0 ? "100%" : 400,
+                }
+              }
             >
               {userPosts.length !== 0 ? (
                 <FlatList
@@ -155,13 +167,15 @@ const ProfileScreen = ({ navigation }) => {
                         <EvilIcons
                           onPress={() =>
                             navigation.navigate("Comments", {
-                              postId: item.postId,
+                              postId: item.id,
+                              uri: item.photo,
                             })
                           }
                           name="comment"
                           size={30}
                           color="#BDBDBD"
                         />
+
                         <View
                           style={{
                             position: "absolute",
@@ -182,7 +196,11 @@ const ProfileScreen = ({ navigation }) => {
                                 coords: item.coords,
                               })
                             }
-                            style={{ paddingLeft: 26, fontSize: 16 }}
+                            style={{
+                              paddingLeft: 26,
+                              fontSize: 16,
+                              textDecorationLine: "underline",
+                            }}
                           >
                             {item.location}
                           </Text>
@@ -192,7 +210,12 @@ const ProfileScreen = ({ navigation }) => {
                   )}
                 />
               ) : (
-                <View style={{ justifyContent: "center" }}>
+                <View
+                  style={{
+                    justifyContent: "center",
+                    height: 400,
+                  }}
+                >
                   <Text style={{ textAlign: "center" }}>Нема постів</Text>
                 </View>
               )}
@@ -207,6 +230,7 @@ const ProfileScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#ffffff",
   },
   imageBg: {
     resizeMode: "cover",

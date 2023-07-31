@@ -97,6 +97,7 @@ const CreatePostScreen = ({ navigation }) => {
   const uploadPostToServer = async () => {
     try {
       const photo = await uploadPhotoToServer();
+      const createdAt = new Date(); // Добавляем текущую дату создания
       await addDoc(collection(db, "posts"), {
         photo,
         description,
@@ -104,6 +105,7 @@ const CreatePostScreen = ({ navigation }) => {
         coords,
         userId,
         login,
+        createdAt,
       });
       setLocation("");
       setDescription("");
@@ -112,6 +114,12 @@ const CreatePostScreen = ({ navigation }) => {
     } catch (error) {
       console.log(error.message);
     }
+  };
+
+  const clearForm = () => {
+    setLocation("");
+    setDescription("");
+    setPhoto("");
   };
 
   const hideKeyboard = () => {
@@ -153,7 +161,13 @@ const CreatePostScreen = ({ navigation }) => {
         </Camera>
       </View>
 
-      <Pressable onPress={openGallery}>
+      <Pressable
+        style={{
+          marginBottom: 32,
+          width: 150,
+        }}
+        onPress={openGallery}
+      >
         <Text style={styles.text}>
           {photo ? "Редагувати фото" : "Завантажте фото"}
         </Text>
@@ -190,6 +204,13 @@ const CreatePostScreen = ({ navigation }) => {
       <Pressable onPress={uploadPostToServer} style={styles.sendButton}>
         <Text style={{ fontSize: 16, color: "#fff" }}>Опублікувати</Text>
       </Pressable>
+
+      {!isKeyboardShown && (
+        <Pressable onPress={clearForm} style={styles.deleteButton}>
+          <Feather name="trash-2" size={24} color="#BDBDBD" />
+        </Pressable>
+      )}
+
       {locationStatus === "error" && (
         <Text>Помилка отримання місцезнаходження</Text>
       )}
@@ -199,6 +220,7 @@ const CreatePostScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: {
+    position: "relative",
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 32,
@@ -222,7 +244,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   text: {
-    marginBottom: 32,
     color: "#BDBDBD",
     fontFamily: "Roboto-Medium",
     fontSize: 16,
@@ -275,6 +296,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 16,
+  },
+  deleteButton: {
+    position: "absolute",
+    bottom: 22,
+    paddingHorizontal: 23,
+    paddingVertical: 8,
+    backgroundColor: "#F6F6F6",
+    borderRadius: 20,
+    alignSelf: "center",
   },
 });
 
